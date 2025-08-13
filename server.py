@@ -1,38 +1,61 @@
 from flask import Flask, request, jsonify
 import json
 import os
+import requests
 
 app = Flask(__name__)
 
-DATA_FILE = "licenses.json"
+DB_FILE = "licenses.json"
+GUMROAD_PRODUCT_ID = "OB0SQvGWsL_FFse_Jf5lOQ=="
+GUMROAD_ACCESS_TOKEN = ""  # If needed
 
-# Load licenses
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r") as f:
+# Load DB
+if os.path.exists(DB_FILE):
+    with open(DB_FILE) as f:
         licenses = json.load(f)
 else:
     licenses = {}
 
-@app.route("/check_license", methods=["POST"])
-def check_license():
-    data = request.json
-    license_key = data.get("license_key")
-    hwid = data.get("hardware_id")
-
-    if license_key not in licenses:
-        # New license → store it
-        licenses[license_key] = hwid
-        save_data()
-        return jsonify({"success": True, "message": "License bound to this PC"})
-
-    if licenses[license_key] == hwid:
-        return jsonify({"success": True, "message": "Valid license"})
-
-    return jsonify({"success": False, "message": "License already used on another PC"})
-
-def save_data():
-    with open(DATA_FILE, "w") as f:
+def save_db():
+    with open(DB_FILE, "w") as f:
         json.dump(licenses, f)
+
+@app.route("/check")
+def check_license():
+    key = request.args.get("license_key")
+    hwid = request.args.get("hwid")
+
+    if key in licenses:
+        if licenses[key] == hwid:
+            return jsonify({"status": "valid"})
+        else:
+            return jsonify({"status": "invalid"})
+    else:
+        return jsonify({"status": "not_activated"})
+
+@app.route("/activate")
+def activate_license():
+    key = request.args.get("license_key")
+    hwid = request.args.get("hwid")
+
+    # Check Gumroad
+    r = requests.post("https://api.gumroad.com/v2/licenses/verify", data={
+        "product_id": GUMROAD_PRODUCT_ID,
+        "license_key": key
+    })
+    gumroad_data = r.json()
+
+    if not gumroad_data.get("success"):
+        return jsonify({"status": "invalid_key"})
+
+    # Bind HWID
+    licenses[key] = hwid
+    save_db()
+    return jsonify({"status": "activated"})
+
+@app.route("/")
+def home():
+    return "License server running!"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
