@@ -4,4 +4,7 @@ requests
 PyJWT
 filelock
 pyjwt[crypto]
+psycopg2-binary
+
+
 
