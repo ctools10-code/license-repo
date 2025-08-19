@@ -12,7 +12,7 @@ from flask import Flask, request, jsonify
 GUMROAD_PRODUCT_ID = os.environ.get("GUMROAD_PRODUCT_ID", "").strip()
 PRIVATE_KEY_PEM = os.environ.get("PRIVATE_KEY_PEM", "").encode()
 TOKEN_YEARS = int(os.environ.get("TOKEN_YEARS", "3"))
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://db_licenses_user:tHx2QAzc2497FiXVy5neBsOhBNpYlE6G@dpg-d2f3s7ali9vc73bfauug-a/db_licenses")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 app = Flask(__name__)
 
@@ -131,3 +131,4 @@ def check():
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000)
+
